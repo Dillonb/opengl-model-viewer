@@ -21,9 +21,11 @@ private:
     mesh(const std::vector<vertex>& packed_vertices);
 public:
     static std::unique_ptr<mesh> from_obj(const std::string& filename);
+    void render(unsigned int shaderProgram, const glm::mat4& mvp) const;
     unsigned int VBO;
     unsigned int VAO;
-    unsigned int num_vertices;
+    int num_vertices;
+    glm::mat4 transform;
 };
 
 

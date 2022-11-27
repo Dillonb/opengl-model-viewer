@@ -3,6 +3,8 @@
 #include <cstring>
 #include <vector>
 #include <gl.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 using std::vector;
 using std::unique_ptr;
@@ -105,4 +107,11 @@ unique_ptr<mesh> mesh::from_obj(const string& filename) {
     }
 
     return unique_ptr<mesh>(new mesh(packed_vertices));
+}
+
+void mesh::render(unsigned int shaderProgram, const glm::mat4 &mvp) const {
+    int transformLoc = glGetUniformLocation(shaderProgram, "transform");
+    glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(mvp));
+    glBindVertexArray(VAO);
+    glDrawArrays(GL_TRIANGLES, 0, num_vertices);
 }

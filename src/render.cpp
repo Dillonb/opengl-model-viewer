@@ -7,7 +7,6 @@
 #include "mesh.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
 
 using std::unique_ptr;
 
@@ -41,52 +40,6 @@ void render_init() {
     std::cout << "Compiled and linked shaders" << std::endl;
 
     m = mesh::from_obj("/home/dillon/src/opengl-model-viewer/models/obj/cube.obj");
-
-    /*
-    float vertices[] = {
-            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-            0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-            -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-
-            -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-            -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-            -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-            0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-            0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-            0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-            0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-
-            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-            -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-    };
-     */
 }
 
 void render_frame() {
@@ -94,14 +47,13 @@ void render_frame() {
 
     // Rendering code
     glUseProgram(shaderProgram);
-    int transformLoc = glGetUniformLocation(shaderProgram, "transform");
 
     // Model transform
     static int spin = 0;
     static float scale = 0.1;
-    glm::mat4 model(1.0f);
-    model = glm::rotate(model, glm::radians(float(spin)), glm::vec3(1.0, 1.0, 1.0));
-    model = glm::scale(model, glm::vec3(scale, scale, scale));
+    m->transform = glm::mat4(1.0f);
+    m->transform = glm::rotate(m->transform, glm::radians(float(spin)), glm::vec3(1.0, 1.0, 1.0));
+    m->transform = glm::scale(m->transform, glm::vec3(scale, scale, scale));
 
     // Perspective transform
     glm::mat4 proj = glm::perspective(glm::radians(45.0f), window_get_aspect_ratio(), 0.1f, 100.0f);
@@ -110,13 +62,7 @@ void render_frame() {
     //view = glm::translate(view, glm::vec3(0.0f, -10.0f, -10.0f));
     view = glm::lookAt(glm::vec3{0.0f, -2.0f, -2.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, -1.0f, 0.0f});
 
-    glm::mat4 mvp = proj * view * model;
-
-    glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(mvp));
-    glBindVertexArray(m->VAO);
-    glDrawArrays(GL_TRIANGLES, 0, m->num_vertices);
-    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    //glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, nullptr);
+    m->render(shaderProgram, proj * view * m->transform);
 
     spin++;
     spin %= 360;
