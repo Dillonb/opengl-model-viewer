@@ -61,6 +61,22 @@ void window_frame() {
             case SDL_QUIT:
                 quit = true;
                 break;
+            case SDL_KEYDOWN:
+                if (e.key.keysym.sym == SDLK_ESCAPE) {
+                    quit = true;
+                }
         }
     }
+}
+
+int window_get_width() {
+    return window_w;
+}
+
+int window_get_height() {
+    return window_h;
+}
+
+float window_get_aspect_ratio() {
+    return (float)window_w/(float)window_h;
 }
