@@ -4,15 +4,16 @@
 #include "shader_vert.h"
 #include "shader_frag.h"
 #include "window.h"
+#include "mesh.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+using std::unique_ptr;
+
 namespace {
     unsigned int shaderProgram;
-    unsigned int VAO;
-    unsigned int VBO;
-    unsigned int EBO;
+    unique_ptr<mesh> m;
 }
 
 void render_init() {
@@ -34,29 +35,14 @@ void render_init() {
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+
     std::cout << "Compiled and linked shaders" << std::endl;
 
+    m = mesh::from_obj("/home/dillon/src/opengl-model-viewer/models/obj/cube.obj");
+
     /*
-    float vertices[] = {
-            // x    y     z     r     g     b
-             0.5f,  0.5f, 0.0f, 0.0f, 0.0f, 0.0f,  // top right
-             0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,  // bottom right
-            -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,  // bottom left
-            -0.5f,  0.5f, 0.0f, 0.0f, 0.0f, 0.0f,  // top left
-             0.0f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f   // top middle
-    };
-
-
-    unsigned int indices[] = {
-            1, 2, 4
-            /*
-            0, 1, 3,   // first triangle
-            1, 2, 3    // second triangle
-             */ /*
-    };
-*/
-
-
     float vertices[] = {
             -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
             0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
@@ -100,36 +86,7 @@ void render_init() {
             -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
             -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
     };
-
-    // Loading code
-    // Creates a single vertex array object, stores the handle to it in VAO
-    glGenVertexArrays(1, &VAO);
-
-    // Creates a single vertex buffer object
-    glGenBuffers(1, &VBO);
-    // Set it to an array buffer
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
-
-    // Attach it to the VAO we created earlier
-    glBindVertexArray(VAO);
-    // Load the vertex data from above in
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    // Position
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(0 * sizeof(float)));
-    glEnableVertexAttribArray(0); // enables vertex attrib array number zero
-
-    // UV
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1); // enables vertex attrib array number zero
-
-    // Create an element buffer object to hold vertex indices
-    //glGenBuffers(1, &EBO);
-    // Set it to an element array buffer
-    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    //glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+     */
 }
 
 void render_frame() {
@@ -150,12 +107,14 @@ void render_frame() {
     glm::mat4 proj = glm::perspective(glm::radians(45.0f), window_get_aspect_ratio(), 0.1f, 100.0f);
 
     glm::mat4 view(1.0f);
+    //view = glm::translate(view, glm::vec3(0.0f, -10.0f, -10.0f));
+    view = glm::lookAt(glm::vec3{0.0f, -2.0f, -2.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, -1.0f, 0.0f});
 
     glm::mat4 mvp = proj * view * model;
 
-    glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(model));
-    glBindVertexArray(VAO);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(mvp));
+    glBindVertexArray(m->VAO);
+    glDrawArrays(GL_TRIANGLES, 0, m->num_vertices);
     //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     //glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, nullptr);
 

@@ -7,6 +7,6 @@ add_custom_command(OUTPUT shader_frag.h
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/shaders/shader.frag)
 
 
-add_executable(mv main.cpp window.cpp window.h render.cpp render.h shader_vert.h shader_frag.h)
+add_executable(mv main.cpp window.cpp window.h render.cpp render.h shader_vert.h shader_frag.h mesh.cpp mesh.h)
 target_include_directories(mv PUBLIC ${SDL2_INCLUDE_DIR} ../external/include ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(mv PUBLIC ${SDL2_LIBRARY})

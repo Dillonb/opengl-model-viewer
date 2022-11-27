@@ -36,10 +36,8 @@ void window_init() {
 
     gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress);
     glClearColor(0.0f, 0.5f, 1.0f, 0.0f);
-    glDisable(GL_DEPTH_TEST);
     std::cout << "Initialized SDL and loaded GL through GLAD" << std::endl;
     window_on_resize(window_w, window_h);
-
 }
 
 SDL_GLContext window_get_ctx() {
