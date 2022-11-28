@@ -9,10 +9,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 using std::unique_ptr;
+using std::vector;
 
 namespace {
     unsigned int shaderProgram;
-    unique_ptr<mesh> m;
+    vector<unique_ptr<mesh>> meshes;
 }
 
 void render_init() {
@@ -39,7 +40,8 @@ void render_init() {
 
     std::cout << "Compiled and linked shaders" << std::endl;
 
-    m = mesh::from_obj("/home/dillon/src/opengl-model-viewer/models/obj/cube.obj");
+    //m = mesh::from_obj("/home/dillon/src/opengl-model-viewer/models/obj/head.obj");
+    meshes = mesh::from_md2("/home/dillon/src/opengl-model-viewer/models/md2/Doomguy/doomguy.md2");
 }
 
 void render_frame() {
@@ -50,26 +52,42 @@ void render_frame() {
 
     // Model transform
     static int spin = 0;
-    static float scale = 0.1;
+    static float scale = 1;
+    static int mesh_idx = 0;
+    auto& m = meshes[mesh_idx];
+    static int frame_switch = 0;
+    frame_switch = (frame_switch + 1) % 10;
+    if (frame_switch == 0) {
+        mesh_idx = (mesh_idx + 1) % meshes.size();
+    }
+
     m->transform = glm::mat4(1.0f);
-    m->transform = glm::rotate(m->transform, glm::radians(float(spin)), glm::vec3(1.0, 1.0, 1.0));
+    m->transform = glm::rotate(m->transform, glm::radians(float(spin)), glm::vec3(0.0, 0.0, 1.0));
     m->transform = glm::scale(m->transform, glm::vec3(scale, scale, scale));
 
     // Perspective transform
-    glm::mat4 proj = glm::perspective(glm::radians(45.0f), window_get_aspect_ratio(), 0.1f, 100.0f);
+    glm::mat4 proj = glm::perspective(glm::radians(45.0f), window_get_aspect_ratio(), 0.1f, 10000000.0f);
 
+    // Eye position
     glm::mat4 view(1.0f);
-    //view = glm::translate(view, glm::vec3(0.0f, -10.0f, -10.0f));
-    view = glm::lookAt(glm::vec3{0.0f, -2.0f, -2.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, -1.0f, 0.0f});
+    view = glm::lookAt(
+            // Where we are
+            glm::vec3{100.0f, 0.0f, 0.0f},
+            // Where we are looking at
+            {0.0f, 0.0f, 0.0f},
+            // Where the fuck is up
+            {0.0f, 0.0f, 1.0f});
 
     m->render(shaderProgram, proj * view * m->transform);
 
     spin++;
     spin %= 360;
 
+    /*
     static float scale_delta = 0.01;
     scale += scale_delta;
-    if (scale > 1 || scale < 0.1) {
+    if (scale > 2 || scale < 1) {
         scale_delta = -scale_delta;
     }
+     */
 }
