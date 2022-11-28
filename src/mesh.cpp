@@ -6,6 +6,8 @@
 #include <gl.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 using std::vector;
 using std::unique_ptr;
@@ -14,11 +16,12 @@ using std::string;
 
 #define streql(x, y) (strcmp(x, y) == 0)
 
-md2_vec3_t anorms_table[162] = {
+glm::vec3 anorms_table[162] = {
 #include "anorms.h"
 };
 
-mesh::mesh(const vector<vertex>& packed_vertices) {
+mesh::mesh(const vector<vertex>& packed_vertices, unsigned int gl_tex_id)
+        : gl_tex_id(gl_tex_id) {
     VAO = 0;
     VBO = 0;
     num_vertices = packed_vertices.size();
@@ -113,7 +116,24 @@ unique_ptr<mesh> mesh::from_obj(const string& filename) {
 
     return unique_ptr<mesh>(new mesh(packed_vertices));
 }
-vector<unique_ptr<mesh>> mesh::from_md2(const string& filename) {
+vector<unique_ptr<mesh>> mesh::from_md2(const string& filename, const string& texture_filename) {
+    int texture_width, texture_height, texture_components;
+    uint8_t* texture_data = nullptr;
+    unsigned int gl_tex_id = 0;
+    if (!texture_filename.empty()) {
+        texture_data = stbi_load(texture_filename.c_str(), &texture_width, &texture_height, &texture_components, STBI_rgb_alpha);
+        glActiveTexture(GL_TEXTURE0);
+        glGenTextures(1, &gl_tex_id);
+        glBindTexture(GL_TEXTURE_2D, gl_tex_id);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture_width, texture_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture_data);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        printf("Loading texture: %p w: %d h: %d\n", texture_data, texture_width, texture_height);
+    }
+
     FILE* fp = fopen(filename.c_str(), "rb");
     md2_header_t h = {0};
     fread(&h, sizeof(md2_header_t), 1, fp);
@@ -142,10 +162,10 @@ vector<unique_ptr<mesh>> mesh::from_md2(const string& filename) {
     meshes.reserve(h.num_frames);
 
     fseek(fp, h.offset_frames, SEEK_SET);
-    for (int i = 0; i < h.num_frames; i++) {
+    for (int frame_idx = 0; frame_idx < h.num_frames; frame_idx++) {
         md2_frame_t frame;
-        fread(frame.scale, sizeof(md2_vec3_t), 1, fp);
-        fread(frame.translate, sizeof(md2_vec3_t), 1, fp);
+        fread(&frame.scale, sizeof(glm::vec3), 1, fp);
+        fread(&frame.translate, sizeof(glm::vec3), 1, fp);
         fread(frame.name, sizeof(char), 16, fp);
 
         frame.verts.resize(h.num_vertices);
@@ -153,31 +173,46 @@ vector<unique_ptr<mesh>> mesh::from_md2(const string& filename) {
 
         vector<vertex> packed_vertices;
         for (const auto& triangle : triangles) {
-            for (const auto& vertex_idx : triangle.vertices) {
-                auto vertex = frame.verts[vertex_idx];
+            for (int i = 0; i < 3; i++) {
+                int vertex_idx = triangle.vertices[i];
+                md2_vertex_t vertex = frame.verts[vertex_idx];
+
                 glm::vec3 pos(
                         (frame.scale[0] * (float)vertex.v[0]) + frame.translate[0],
                         (frame.scale[1] * (float)vertex.v[1]) + frame.translate[1],
                         (frame.scale[2] * (float)vertex.v[2]) + frame.translate[2]
                 );
-                /*
-                s = mdl->texcoords[mdl->triangles[i].st[j]].s / mdl->header.skinwidth;
-                t = mdl->texcoords[mdl->triangles[i].st[j]].t / mdl->header.skinheight;
-                 */
-                auto anorm = anorms_table[vertex.normalIndex];
-                packed_vertices.emplace_back(pos, glm::vec3(anorm[0], anorm[1], anorm[2]), glm::vec2(0, 0));
+
+                packed_vertices.emplace_back(
+                        pos,
+                        anorms_table[vertex.normalIndex],
+                        glm::vec2(
+                                (float)uv[triangle.st[i]].s / h.skinwidth,
+                                (float)uv[triangle.st[i]].t / h.skinheight));
             }
         }
 
-        meshes.emplace_back(new mesh(packed_vertices));
+        meshes.emplace_back(new mesh(packed_vertices, gl_tex_id));
     }
 
-    return std::move(meshes);
+    return meshes;
 }
 
 void mesh::render(unsigned int shaderProgram, const glm::mat4 &mvp) const {
     int transformLoc = glGetUniformLocation(shaderProgram, "transform");
     glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(mvp));
+
+    /*
+    int samplerLoc = glGetUniformLocation(shaderProgram, "sampler");
+    glUniform1i(samplerLoc, 0);
+    printf("Sampler loc: %d\n", samplerLoc);
+     */
+    if (gl_tex_id > 0) {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, gl_tex_id);
+    }
+
     glBindVertexArray(VAO);
     glDrawArrays(GL_TRIANGLES, 0, num_vertices);
+
 }

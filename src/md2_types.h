@@ -27,9 +27,6 @@ struct md2_header_t {
     int offset_end;             /* offset end of file */
 };
 
-/* Vector */
-typedef float md2_vec3_t[3];
-
 /* Texture name */
 struct md2_skin_t {
     char name[64];              /* texture file name */
@@ -59,8 +56,8 @@ struct md2_vertex_t
 /* Model frame */
 struct md2_frame_t
 {
-    md2_vec3_t scale;               /* scale factor */
-    md2_vec3_t translate;           /* translation vector */
+    glm::vec3 scale;               /* scale factor */
+    glm::vec3 translate;           /* translation vector */
     char name[16];              /* frame name */
     std::vector<md2_vertex_t> verts; /* list of frame's vertices */
     //struct md2_vertex_t *verts;

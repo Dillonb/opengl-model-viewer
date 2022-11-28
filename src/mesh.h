@@ -18,13 +18,14 @@ private:
                   normal(normal),
                   uv(uv) {}
     };
-    mesh(const std::vector<vertex>& packed_vertices);
+    mesh(const std::vector<vertex>& packed_vertices, unsigned int gl_tex_id = 0);
 public:
     static std::unique_ptr<mesh> from_obj(const std::string& filename);
-    static std::vector<std::unique_ptr<mesh>> from_md2(const std::string& filename);
+    static std::vector<std::unique_ptr<mesh>> from_md2(const std::string& filename, const std::string& texture_filename);
     void render(unsigned int shaderProgram, const glm::mat4& mvp) const;
     unsigned int VBO;
     unsigned int VAO;
+    unsigned int gl_tex_id;
     int num_vertices;
     glm::mat4 transform;
 };

@@ -41,7 +41,9 @@ void render_init() {
     std::cout << "Compiled and linked shaders" << std::endl;
 
     //m = mesh::from_obj("/home/dillon/src/opengl-model-viewer/models/obj/head.obj");
-    meshes = mesh::from_md2("/home/dillon/src/opengl-model-viewer/models/md2/Doomguy/doomguy.md2");
+    meshes = mesh::from_md2("/home/dillon/src/opengl-model-viewer/models/md2/Doomguy/doomguy.md2", "/home/dillon/src/opengl-model-viewer/models/md2/Doomguy/green.png");
+
+    //meshes = mesh::from_md2("/home/dillon/src/opengl-model-viewer/models/md2/Monsters/Cyberdemon/cyberdemon.MD2", "/home/dillon/src/opengl-model-viewer/models/md2/Monsters/Cyberdemon/Cyberdemon.png");
 }
 
 void render_frame() {

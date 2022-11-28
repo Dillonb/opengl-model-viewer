@@ -31,6 +31,7 @@ void window_init() {
                            window_w,
                            window_h,
                            SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
     ctx = SDL_GL_CreateContext(win);
     SDL_GL_SetSwapInterval(1);
 
