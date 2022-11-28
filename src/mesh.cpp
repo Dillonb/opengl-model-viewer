@@ -198,15 +198,10 @@ vector<unique_ptr<mesh>> mesh::from_md2(const string& filename, const string& te
     return meshes;
 }
 
-void mesh::render(unsigned int shaderProgram, const glm::mat4 &mvp) const {
-    int transformLoc = glGetUniformLocation(shaderProgram, "transform");
-    glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(mvp));
+void mesh::render(ShaderProgram& shaderProgram, const glm::mat4 &mvp) const {
+    glUseProgram(shaderProgram.id);
+    shaderProgram.setM4("transform", mvp);
 
-    /*
-    int samplerLoc = glGetUniformLocation(shaderProgram, "sampler");
-    glUniform1i(samplerLoc, 0);
-    printf("Sampler loc: %d\n", samplerLoc);
-     */
     if (gl_tex_id > 0) {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, gl_tex_id);

@@ -5,6 +5,7 @@
 #include "shader_frag.h"
 #include "window.h"
 #include "mesh.h"
+#include "ShaderProgram.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -12,28 +13,12 @@ using std::unique_ptr;
 using std::vector;
 
 namespace {
-    unsigned int shaderProgram;
+    unique_ptr<ShaderProgram> shaderProgram;
     vector<unique_ptr<mesh>> meshes;
 }
 
 void render_init() {
-    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    const char* shader_vert_src_ptr = (const char*)&shader_vert_src;
-    glShaderSource(vertexShader, 1, &shader_vert_src_ptr, (const GLint*)&shader_vert_src_len);
-    glCompileShader(vertexShader);
-
-    unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    const char* shader_frag_src_ptr = (const char*)&shader_frag_src;
-    glShaderSource(fragmentShader, 1, &shader_frag_src_ptr, (const GLint*)&shader_frag_src_len);
-    glCompileShader(fragmentShader);
-
-    shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
+    shaderProgram = std::make_unique<ShaderProgram>((const char*)shader_vert_src, shader_vert_src_len, (const char*)shader_frag_src, shader_frag_src_len);
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -48,9 +33,6 @@ void render_init() {
 
 void render_frame() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    // Rendering code
-    glUseProgram(shaderProgram);
 
     // Model transform
     static int spin = 0;
@@ -80,7 +62,7 @@ void render_frame() {
             // Where the fuck is up
             {0.0f, 0.0f, 1.0f});
 
-    m->render(shaderProgram, proj * view * m->transform);
+    m->render(*shaderProgram, proj * view * m->transform);
 
     spin++;
     spin %= 360;
