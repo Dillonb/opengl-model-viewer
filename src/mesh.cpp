@@ -20,8 +20,10 @@ glm::vec3 anorms_table[162] = {
 #include "anorms.h"
 };
 
-mesh::mesh(const vector<vertex>& packed_vertices, unsigned int gl_tex_id)
-        : gl_tex_id(gl_tex_id) {
+
+mesh::frame::frame(const vector<vertex> &packed_vertices, const std::string& name, unsigned int gl_tex_id)
+        : name(name),
+          gl_tex_id(gl_tex_id) {
     VAO = 0;
     VBO = 0;
     num_vertices = packed_vertices.size();
@@ -114,14 +116,14 @@ unique_ptr<mesh> mesh::from_obj(const string& filename) {
         }
     }
 
-    return unique_ptr<mesh>(new mesh(packed_vertices));
+    return make_unique<mesh>(vector{frame(packed_vertices)});
 }
-vector<unique_ptr<mesh>> mesh::from_md2(const string& filename, const string& texture_filename) {
+
+unique_ptr<mesh> mesh::from_md2(const string& filename, const string& texture_filename) {
     int texture_width, texture_height, texture_components;
-    uint8_t* texture_data = nullptr;
     unsigned int gl_tex_id = 0;
     if (!texture_filename.empty()) {
-        texture_data = stbi_load(texture_filename.c_str(), &texture_width, &texture_height, &texture_components, STBI_rgb_alpha);
+        const unsigned char* texture_data = stbi_load(texture_filename.c_str(), &texture_width, &texture_height, &texture_components, STBI_rgb_alpha);
         glActiveTexture(GL_TEXTURE0);
         glGenTextures(1, &gl_tex_id);
         glBindTexture(GL_TEXTURE_2D, gl_tex_id);
@@ -131,7 +133,6 @@ vector<unique_ptr<mesh>> mesh::from_md2(const string& filename, const string& te
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        printf("Loading texture: %p w: %d h: %d\n", texture_data, texture_width, texture_height);
     }
 
     FILE* fp = fopen(filename.c_str(), "rb");
@@ -158,8 +159,8 @@ vector<unique_ptr<mesh>> mesh::from_md2(const string& filename, const string& te
     fseek(fp, h.offset_glcmds, SEEK_SET);
     fread(glcmds.data(), sizeof(int), h.num_glcmds, fp);
 
-    vector<unique_ptr<mesh>> meshes;
-    meshes.reserve(h.num_frames);
+    vector<frame> frames;
+    frames.reserve(h.num_frames);
 
     fseek(fp, h.offset_frames, SEEK_SET);
     for (int frame_idx = 0; frame_idx < h.num_frames; frame_idx++) {
@@ -192,22 +193,23 @@ vector<unique_ptr<mesh>> mesh::from_md2(const string& filename, const string& te
             }
         }
 
-        meshes.emplace_back(new mesh(packed_vertices, gl_tex_id));
+        frames.emplace_back(packed_vertices, frame.name, gl_tex_id);
     }
 
-    return meshes;
+    return make_unique<mesh>(frames);
 }
 
-void mesh::render(ShaderProgram& shaderProgram, const glm::mat4 &mvp) const {
+void mesh::render(ShaderProgram& shaderProgram, const glm::mat4 &mvp, int frame) const {
     glUseProgram(shaderProgram.id);
     shaderProgram.setM4("transform", mvp);
 
-    if (gl_tex_id > 0) {
+    auto& f = frames[frame];
+
+    if (f.gl_tex_id > 0) {
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, gl_tex_id);
+        glBindTexture(GL_TEXTURE_2D, f.gl_tex_id);
     }
 
-    glBindVertexArray(VAO);
-    glDrawArrays(GL_TRIANGLES, 0, num_vertices);
-
+    glBindVertexArray(f.VAO);
+    glDrawArrays(GL_TRIANGLES, 0, f.num_vertices);
 }

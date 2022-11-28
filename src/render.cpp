@@ -14,7 +14,7 @@ using std::vector;
 
 namespace {
     unique_ptr<ShaderProgram> shaderProgram;
-    vector<unique_ptr<mesh>> meshes;
+    unique_ptr<mesh> m;
 }
 
 void render_init() {
@@ -26,7 +26,7 @@ void render_init() {
     std::cout << "Compiled and linked shaders" << std::endl;
 
     //m = mesh::from_obj("/home/dillon/src/opengl-model-viewer/models/obj/head.obj");
-    meshes = mesh::from_md2("/home/dillon/src/opengl-model-viewer/models/md2/Doomguy/doomguy.md2", "/home/dillon/src/opengl-model-viewer/models/md2/Doomguy/green.png");
+    m = mesh::from_md2("/home/dillon/src/opengl-model-viewer/models/md2/Doomguy/doomguy.md2", "/home/dillon/src/opengl-model-viewer/models/md2/Doomguy/green.png");
 
     //meshes = mesh::from_md2("/home/dillon/src/opengl-model-viewer/models/md2/Monsters/Cyberdemon/cyberdemon.MD2", "/home/dillon/src/opengl-model-viewer/models/md2/Monsters/Cyberdemon/Cyberdemon.png");
 }
@@ -37,12 +37,11 @@ void render_frame() {
     // Model transform
     static int spin = 0;
     static float scale = 1;
-    static int mesh_idx = 0;
-    auto& m = meshes[mesh_idx];
+    static int frame = 0;
     static int frame_switch = 0;
     frame_switch = (frame_switch + 1) % 10;
     if (frame_switch == 0) {
-        mesh_idx = (mesh_idx + 1) % meshes.size();
+        frame = (frame + 1) % m->frames.size();
     }
 
     m->transform = glm::mat4(1.0f);
@@ -62,7 +61,7 @@ void render_frame() {
             // Where the fuck is up
             {0.0f, 0.0f, 1.0f});
 
-    m->render(*shaderProgram, proj * view * m->transform);
+    m->render(*shaderProgram, proj * view * m->transform, frame);
 
     spin++;
     spin %= 360;

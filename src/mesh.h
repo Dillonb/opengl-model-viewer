@@ -19,15 +19,22 @@ private:
                   normal(normal),
                   uv(uv) {}
     };
-    mesh(const std::vector<vertex>& packed_vertices, unsigned int gl_tex_id = 0);
+    struct frame {
+        std::string name;
+
+        unsigned int VBO;
+        unsigned int VAO;
+        unsigned int gl_tex_id;
+        int num_vertices;
+
+        explicit frame(const std::vector<vertex>& packed_vertices, const std::string& name = "", unsigned int gl_tex_id = 0);
+    };
 public:
+    explicit mesh(std::vector<frame> frames) : frames(std::move(frames)), transform(1.0f) {}
     static std::unique_ptr<mesh> from_obj(const std::string& filename);
-    static std::vector<std::unique_ptr<mesh>> from_md2(const std::string& filename, const std::string& texture_filename);
-    void render(ShaderProgram& shaderProgram, const glm::mat4& mvp) const;
-    unsigned int VBO;
-    unsigned int VAO;
-    unsigned int gl_tex_id;
-    int num_vertices;
+    static std::unique_ptr<mesh> from_md2(const std::string& filename, const std::string& texture_filename);
+    void render(ShaderProgram& shaderProgram, const glm::mat4& mvp, int frame = 0) const;
+    std::vector<frame> frames;
     glm::mat4 transform;
 };
 
